@@ -5,9 +5,9 @@ interface IPublicLabels {
     // types
 
     enum Status {
-        NONE = 0,
-        LABELED = 1,
-        VERIFIED = 2,
+        NONE,
+        LABELED,
+        VERIFIED
     }
 
     struct Entry {
@@ -26,24 +26,24 @@ interface IPublicLabels {
 
     // setters
 
-    function addContributor(address addr) onlyOwner;
-    function removeContributor(address addr) onlyOwner;
-    function addVerifier(address addr) onlyOwner;
-    function removeVerifier(address addr) onlyOwner;
+    function addContributor(address addr) external;
+    function removeContributor(address addr) external;
+    function addVerifier(address addr) external;
+    function removeVerifier(address addr) external;
 
-    function approvePendingChanges(uint[] changeIds) onlyOwner
-    function rejectPendingChanges(uint[] changeIds) onlyOwner
+    function approvePendingChanges(uint[] memory changeIds) external;
+    function rejectPendingChanges(uint[] memory changeIds) external;
 
-    function setLabels(address[] addrs, string[] labels) onlyContributor;
-    function setStates(address[] addrs, Status[] states) onlyVerifier;
+    function setLabels(address[] memory addrs, string[] memory labels) external;
+    function setStates(address[] memory addrs, Status[] memory states) external;
 
     // getters
 
-    function allContributors() view returns (address[]);
-    function allVerfiers() view returns (address[]);
+    function allContributors() external view returns (address[] memory);
+    function allVerfiers() external view returns (address[] memory);
 
-    function pendingChanges(uint start, uint limit) view returns (address[] addr, Entry[] entries);
+    function pendingChanges(uint start, uint limit) external view returns (address[] memory addr, Entry[] memory entries);
 
-    function allEntries(uint start, uint limit) view returns (Entry[] entries);
-    function entries(address[] addrs) view returns (Entry[] entries);
+    function allEntries(uint start, uint limit) external view returns (Entry[] memory entries);
+    function entries(address[] memory addrs) external view returns (Entry[] memory entries);
 }
