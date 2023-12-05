@@ -2,45 +2,50 @@
 pragma solidity ^0.8.9;
 
 import "./IPublicLabels.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract PublicLabels is IPublicLabels, Ownable {
-  mapping(address => bool) private contributors;
-  mapping(address => bool) private verifiers;
+contract PublicLabels is IPublicLabels, AccessControl {
+  bytes32 public constant CONTRIBUTOR_ROLE = keccak256("CONTRIBUTOR");
+  bytes32 public constant VERIFIER_ROLE = keccak256("VERIFIER");
+
   mapping(address => Entry) private addressToEntry;
   mapping(uint => Entry) public pendingEntryById;
 
   uint private nextChangeId = 0;
 
-  constructor() Ownable(msg.sender) {}
+  constructor() {
+    grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+  }
 
   // setters
 
-  function addContributor(address addr) external onlyOwner {
-    require(!_isContributor(addr), "Address is already a contributor");
-    contributors[addr] = true;
+  function addContributor(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    grantRole(CONTRIBUTOR_ROLE, addr);
     emit AddContributor(addr);
   }
 
-  function removeContributor(address addr) external onlyOwner {
-    require(_isContributor(addr), "Address is not a contributor");
-    contributors[addr] = false;
+  function removeContributor(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    revokeRole(CONTRIBUTOR_ROLE, addr);
     emit RemoveContributor(addr);
   }
 
-  function addVerifier(address addr) external onlyOwner {
-    require(!_isVerifier(addr), "Address is already a verifier");
-    verifiers[addr] = true;
+  function addVerifier(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    grantRole(VERIFIER_ROLE, addr);
     emit AddVerifier(addr);
   }
 
-  function removeVerifier(address addr) external onlyOwner {
-    require(_isVerifier(addr), "Address is not a verifier");
-    verifiers[addr] = false;
+  function removeVerifier(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    revokeRole(VERIFIER_ROLE, addr);
     emit RemoveVerifier(addr);
   }
 
-  function approvePendingChanges(uint[] memory changeIds) external onlyOwner {
+  function approvePendingChanges(uint[] memory changeIds) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
+
     for (uint i = 0; i < changeIds.length; i++) {
       uint changeId = changeIds[i];
       require(changeId < nextChangeId, "Invalid changeId");
@@ -52,7 +57,9 @@ contract PublicLabels is IPublicLabels, Ownable {
     }
   }
 
-  function rejectPendingChanges(uint[] memory changeIds) external onlyOwner {
+  function rejectPendingChanges(uint[] memory changeIds) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
+
     for (uint i = 0; i < changeIds.length; i++) {
       uint changeId = changeIds[i];
       require(changeId < nextChangeId, "Invalid changeId");
@@ -68,12 +75,13 @@ contract PublicLabels is IPublicLabels, Ownable {
       "Address and label arrays length mismatch"
     );
     require(
-      msg.sender == owner() || _isContributor(msg.sender),
+      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) ||
+        hasRole(CONTRIBUTOR_ROLE, msg.sender),
       "Not authorized"
     );
 
     for (uint i = 0; i < addrs.length; i++) {
-      if (msg.sender == owner()) {
+      if (hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
         addressToEntry[addrs[i]] = Entry(
           addrs[i],
           labels[i],
@@ -91,7 +99,11 @@ contract PublicLabels is IPublicLabels, Ownable {
       addrs.length == states.length,
       "Address and state arrays length mismatch"
     );
-    require(msg.sender == owner() || _isVerifier(msg.sender), "Not authorized");
+    require(
+      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) ||
+        hasRole(VERIFIER_ROLE, msg.sender),
+      "Not authorized"
+    );
 
     for (uint i = 0; i < addrs.length; i++) {
       addressToEntry[addrs[i]].state = states[i];
@@ -119,18 +131,7 @@ contract PublicLabels is IPublicLabels, Ownable {
     address[] memory addrs
   ) external view returns (Entry[] memory entries) {}
 
-  // helpers
-  function _isContributor(address addr) internal view returns (bool) {
-    return contributors[addr];
-  }
-
-  function _isVerifier(address addr) internal view returns (bool) {
-    return verifiers[addr];
-  }
-
   function _addPendingChange(address addr, string memory label) internal {
-    require(_isContributor(msg.sender), "Not authorized");
-
     pendingEntryById[nextChangeId] = Entry(addr, label, Status.LABELED);
     emit PendingChange(nextChangeId);
     nextChangeId++;
