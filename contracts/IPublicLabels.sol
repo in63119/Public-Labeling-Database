@@ -11,6 +11,7 @@ interface IPublicLabels {
     }
 
     struct Entry {
+        address addr;
         string label;
         Status state;
     }
@@ -42,8 +43,16 @@ interface IPublicLabels {
     function allContributors() external view returns (address[] memory);
     function allVerfiers() external view returns (address[] memory);
 
-    function pendingChanges(uint start, uint limit) external view returns (address[] memory addr, Entry[] memory entries);
+    function pendingChanges(
+        uint start,
+        uint limit
+    ) external view returns (address[] memory addr, Entry[] memory entries);
 
-    function allEntries(uint start, uint limit) external view returns (Entry[] memory entries);
-    function entries(address[] memory addrs) external view returns (Entry[] memory entries);
+    function allEntries(
+        uint start,
+        uint limit
+    ) external view returns (Entry[] memory entries);
+    function entries(
+        address[] memory addrs
+    ) external view returns (Entry[] memory entries);
 }
