@@ -15,7 +15,7 @@ contract PublicLabels is IPublicLabels, AccessControl {
     mapping(uint => Entry) public pendingChangeEntries;
 
     constructor() {
-        grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     modifier onlyAdmin() {
