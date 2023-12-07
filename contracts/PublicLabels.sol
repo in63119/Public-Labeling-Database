@@ -2,45 +2,138 @@
 pragma solidity ^0.8.9;
 
 import "./IPublicLabels.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract PublicLabels is IPublicLabels {
-    function addContributor(address addr) external {}
+contract PublicLabels is IPublicLabels, AccessControl {
+  bytes32 public constant CONTRIBUTOR_ROLE = keccak256("CONTRIBUTOR");
+  bytes32 public constant VERIFIER_ROLE = keccak256("VERIFIER");
 
-    function removeContributor(address addr) external {}
+  mapping(address => Entry) private addressToEntry;
+  mapping(uint => Entry) public pendingEntryById;
 
-    function addVerifier(address addr) external {}
+  uint private nextChangeId = 0;
 
-    function removeVerifier(address addr) external {}
+  constructor() {
+    grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+  }
 
-    function approvePendingChanges(uint[] memory changeIds) external {}
+  // setters
 
-    function rejectPendingChanges(uint[] memory changeIds) external {}
+  function addContributor(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    grantRole(CONTRIBUTOR_ROLE, addr);
+    emit AddContributor(addr);
+  }
 
-    function setLabels(
-        address[] memory addrs,
-        string[] memory labels
-    ) external {}
+  function removeContributor(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    revokeRole(CONTRIBUTOR_ROLE, addr);
+    emit RemoveContributor(addr);
+  }
 
-    function setStates(
-        address[] memory addrs,
-        Status[] memory states
-    ) external {}
+  function addVerifier(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    grantRole(VERIFIER_ROLE, addr);
+    emit AddVerifier(addr);
+  }
 
-    function allContributors() external view returns (address[] memory) {}
+  function removeVerifier(address addr) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not an admin");
+    revokeRole(VERIFIER_ROLE, addr);
+    emit RemoveVerifier(addr);
+  }
 
-    function allVerfiers() external view returns (address[] memory) {}
+  function approvePendingChanges(uint[] memory changeIds) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
 
-    function pendingChanges(
-        uint start,
-        uint limit
-    ) external view returns (address[] memory addr, Entry[] memory entries) {}
+    for (uint i = 0; i < changeIds.length; i++) {
+      uint changeId = changeIds[i];
+      require(changeId < nextChangeId, "Invalid changeId");
 
-    function allEntries(
-        uint start,
-        uint limit
-    ) external view returns (Entry[] memory entries) {}
+      Entry memory pendingEntry = pendingEntryById[changeId];
+      addressToEntry[pendingEntry.addr] = pendingEntry;
+      emit EntryChange(pendingEntry.addr, pendingEntry.label, Status.VERIFIED);
+      delete pendingEntryById[changeId];
+    }
+  }
 
-    function entries(
-        address[] memory addrs
-    ) external view returns (Entry[] memory entries) {}
+  function rejectPendingChanges(uint[] memory changeIds) external {
+    require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
+
+    for (uint i = 0; i < changeIds.length; i++) {
+      uint changeId = changeIds[i];
+      require(changeId < nextChangeId, "Invalid changeId");
+
+      delete pendingEntryById[changeId];
+      emit PendingChange(changeId);
+    }
+  }
+
+  function setLabels(address[] memory addrs, string[] memory labels) external {
+    require(
+      addrs.length == labels.length,
+      "Address and label arrays length mismatch"
+    );
+    require(
+      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) ||
+        hasRole(CONTRIBUTOR_ROLE, msg.sender),
+      "Not authorized"
+    );
+
+    for (uint i = 0; i < addrs.length; i++) {
+      if (hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+        addressToEntry[addrs[i]] = Entry(
+          addrs[i],
+          labels[i],
+          addressToEntry[addrs[i]].state
+        );
+        emit EntryChange(addrs[i], labels[i], addressToEntry[addrs[i]].state);
+      } else {
+        _addPendingChange(addrs[i], labels[i]);
+      }
+    }
+  }
+
+  function setStates(address[] memory addrs, Status[] memory states) external {
+    require(
+      addrs.length == states.length,
+      "Address and state arrays length mismatch"
+    );
+    require(
+      hasRole(DEFAULT_ADMIN_ROLE, msg.sender) ||
+        hasRole(VERIFIER_ROLE, msg.sender),
+      "Not authorized"
+    );
+
+    for (uint i = 0; i < addrs.length; i++) {
+      addressToEntry[addrs[i]].state = states[i];
+      emit EntryChange(addrs[i], addressToEntry[addrs[i]].label, states[i]);
+    }
+  }
+
+  // getters
+
+  function allContributors() external view returns (address[] memory) {}
+
+  function allVerfiers() external view returns (address[] memory) {}
+
+  function pendingChanges(
+    uint start,
+    uint limit
+  ) external view returns (address[] memory addr, Entry[] memory entries) {}
+
+  function allEntries(
+    uint start,
+    uint limit
+  ) external view returns (Entry[] memory entries) {}
+
+  function entries(
+    address[] memory addrs
+  ) external view returns (Entry[] memory entries) {}
+
+  function _addPendingChange(address addr, string memory label) internal {
+    pendingEntryById[nextChangeId] = Entry(addr, label, Status.LABELED);
+    emit PendingChange(nextChangeId);
+    nextChangeId++;
+  }
 }
