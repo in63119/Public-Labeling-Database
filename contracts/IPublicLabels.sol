@@ -11,7 +11,7 @@ interface IPublicLabels {
     }
 
     struct Entry {
-        address addr;
+        address addr; // TODO: remove it because we have pendingChangeAddrs
         string label;
         Status state;
     }
@@ -52,7 +52,8 @@ interface IPublicLabels {
         uint start,
         uint limit
     ) external view returns (Entry[] memory entries);
-    function entries(
+
+    function getEntries(
         address[] memory addrs
     ) external view returns (Entry[] memory entries);
 }
