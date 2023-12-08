@@ -2,63 +2,64 @@
 pragma solidity ^0.8.9;
 
 interface IPublicLabels {
-  // types
+    // types
 
-  enum Status {
-    NONE,
-    LABELED,
-    VERIFIED
-  }
+    enum Status {
+        NONE,
+        LABELED,
+        VERIFIED
+    }
 
-  struct Entry {
-    string label;
-    Status state;
-  }
+    struct Entry {
+        address addr; // TODO: remove it because we have pendingChangeAddrs
+        string label;
+        Status state;
+    }
 
-  // events
+    // events
 
-  event AddContributor(address indexed contributor);
-  event RemoveContributor(address indexed contributor);
-  event AddVerifier(address indexed verifier);
-  event RemoveVerifier(address indexed verifier);
-  event EntryChange(address indexed addr, string label, Status state);
-  event PendingChange(uint indexed changeId);
+    event AddContributor(address indexed contributor);
+    event RemoveContributor(address indexed contributor);
+    event AddVerifier(address indexed verifier);
+    event RemoveVerifier(address indexed verifier);
+    event EntryChange(address indexed addr, string label, Status state);
+    event PendingChange(uint indexed changeId);
 
-  // setters
+    // setters
 
-  function addContributor(address addr) external;
+    function addContributor(address addr) external;
 
-  function removeContributor(address addr) external;
+    function removeContributor(address addr) external;
 
-  function addVerifier(address addr) external;
+    function addVerifier(address addr) external;
 
-  function removeVerifier(address addr) external;
+    function removeVerifier(address addr) external;
 
-  function approvePendingChanges(uint[] memory changeIds) external;
+    function approvePendingChanges(uint[] memory changeIds) external;
 
-  function rejectPendingChanges(uint[] memory changeIds) external;
+    function rejectPendingChanges(uint[] memory changeIds) external;
 
-  function setLabels(address[] memory addrs, string[] memory labels) external;
+    function setLabels(address[] memory addrs, string[] memory labels) external;
 
-  function setStates(address[] memory addrs, Status[] memory states) external;
+    function setStates(address[] memory addrs, Status[] memory states) external;
 
-  // getters
+    // getters
 
-  function allContributors() external view returns (address[] memory);
+    function allContributors() external view returns (address[] memory);
 
-  function allVerfiers() external view returns (address[] memory);
+    function allVerfiers() external view returns (address[] memory);
 
-  function pendingChanges(
-    uint start,
-    uint limit
-  ) external view returns (address[] memory addr, Entry[] memory entries);
+    function pendingChanges(
+        uint start,
+        uint limit
+    ) external view returns (address[] memory addr, Entry[] memory entries);
 
-  function allEntries(
-    uint start,
-    uint limit
-  ) external view returns (Entry[] memory entries);
+    function allEntries(
+        uint start,
+        uint limit
+    ) external view returns (Entry[] memory entries);
 
-  function getEntries(
-    address[] memory addrs
-  ) external view returns (Entry[] memory entries);
+    function getEntries(
+        address[] memory addrs
+    ) external view returns (Entry[] memory entries);
 }
