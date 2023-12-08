@@ -94,7 +94,7 @@ contract PublicLabels is IPublicLabels, AccessControl {
       "Address and label arrays length mismatch"
     );
 
-    bool memory isAdmin = false;
+    bool isAdmin = false;
 
     if (hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
       isAdmin = true;
