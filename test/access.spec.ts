@@ -31,4 +31,16 @@ describe("PublicLabels", () => {
       await PL.hasRole(await PL.CONTRIBUTOR_ROLE(), contrib1.address)
     ).to.equal(true);
   });
+
+  it("removeContributor", async () => {
+    const { PL, admin, contrib1 } = await loadFixture(deployFixture);
+    await PL.connect(admin).addContributor(contrib1.address);
+    expect(
+      await PL.hasRole(await PL.CONTRIBUTOR_ROLE(), contrib1.address)
+    ).to.equal(true);
+    await PL.connect(admin).removeContributor(contrib1.address);
+    expect(
+      await PL.hasRole(await PL.CONTRIBUTOR_ROLE(), contrib1.address)
+    ).to.equal(false);
+  });
 });
