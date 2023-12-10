@@ -82,9 +82,12 @@ contract PublicLabels is IPublicLabels, AccessControl {
       uint changeId = changeIds[i];
       require(changeId < nextPendingChangeId, "Invalid changeId");
 
+      address addr = pendingChangeAddrs[changeId];
       Entry memory pendingEntry = pendingChangeEntries[changeId];
-      entries[pendingEntry.addr] = pendingEntry;
-      emit EntryChange(pendingEntry.addr, pendingEntry.label, Status.VERIFIED);
+      entries[addr] = Entry(pendingEntry.label, Status.VERIFIED);
+      emit EntryChange(addr, pendingEntry.label, Status.VERIFIED);
+
+      delete pendingChangeAddrs[changeId];
       delete pendingChangeEntries[changeId];
     }
   }
@@ -115,11 +118,13 @@ contract PublicLabels is IPublicLabels, AccessControl {
     }
 
     for (uint i = 0; i < addrs.length; i++) {
+      address addr = addrs[i];
       if (isAdmin) {
-        entries[addrs[i]] = Entry(addrs[i], labels[i], entries[addrs[i]].state);
-        emit EntryChange(addrs[i], labels[i], entries[addrs[i]].state);
+        Entry memory currentEntry = entries[addr];
+        entries[addr] = Entry(labels[i], currentEntry.state);
+        emit EntryChange(addr, labels[i], currentEntry.state);
       } else {
-        _addPendingChange(addrs[i], labels[i]);
+        _addPendingChange(addr, labels[i]);
       }
     }
   }
@@ -134,8 +139,10 @@ contract PublicLabels is IPublicLabels, AccessControl {
     );
 
     for (uint i = 0; i < addrs.length; i++) {
-      entries[addrs[i]].state = states[i];
-      emit EntryChange(addrs[i], entries[addrs[i]].label, states[i]);
+      address addr = addrs[i];
+      Entry memory currentEntry = entries[addr];
+      entries[addr] = Entry(currentEntry.label, states[i]);
+      emit EntryChange(addr, currentEntry.label, states[i]);
     }
   }
 
@@ -164,11 +171,8 @@ contract PublicLabels is IPublicLabels, AccessControl {
   ) external view returns (Entry[] memory entries) {}
 
   function _addPendingChange(address addr, string memory label) internal {
-    pendingChangeEntries[nextPendingChangeId] = Entry(
-      addr,
-      label,
-      Status.LABELED
-    );
+    pendingChangeEntries[nextPendingChangeId] = Entry(label, Status.LABELED);
+    pendingChangeAddrs[nextPendingChangeId] = addr;
     emit PendingChange(nextPendingChangeId);
     nextPendingChangeId++;
   }
