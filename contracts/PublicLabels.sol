@@ -8,9 +8,10 @@ contract PublicLabels is IPublicLabels, AccessControl {
   bytes32 public constant CONTRIBUTOR_ROLE = keccak256("CONTRIBUTOR");
   bytes32 public constant VERIFIER_ROLE = keccak256("VERIFIER");
 
-  mapping(address => Entry) private entries;
-
   uint private nextPendingChangeId = 0;
+
+  mapping(bytes32 => address[]) private roleMembers;
+  mapping(address => Entry) private entries;
   mapping(uint => address) public pendingChangeAddrs;
   mapping(uint => Entry) public pendingChangeEntries;
 
@@ -45,10 +46,23 @@ contract PublicLabels is IPublicLabels, AccessControl {
 
   function addContributor(address addr) external onlyAdmin {
     grantRole(CONTRIBUTOR_ROLE, addr);
+    roleMembers[CONTRIBUTOR_ROLE].push(addr);
     emit AddContributor(addr);
   }
 
   function removeContributor(address addr) external onlyAdmin {
+    uint roleIndex = _findRoleIndex(CONTRIBUTOR_ROLE, addr);
+
+    require(
+      roleIndex != roleMembers[CONTRIBUTOR_ROLE].length,
+      "Not a CONTRIBUTOR address."
+    );
+
+    roleMembers[CONTRIBUTOR_ROLE][roleIndex] = roleMembers[CONTRIBUTOR_ROLE][
+      roleMembers[CONTRIBUTOR_ROLE].length - 1
+    ];
+    roleMembers[CONTRIBUTOR_ROLE].pop();
+
     revokeRole(CONTRIBUTOR_ROLE, addr);
     emit RemoveContributor(addr);
   }
@@ -127,9 +141,13 @@ contract PublicLabels is IPublicLabels, AccessControl {
 
   // getters
 
-  function allContributors() external view returns (address[] memory) {}
+  function allContributors() external view returns (address[] memory) {
+    return roleMembers[CONTRIBUTOR_ROLE];
+  }
 
-  function allVerfiers() external view returns (address[] memory) {}
+  function allVerfiers() external view returns (address[] memory) {
+    return roleMembers[VERIFIER_ROLE];
+  }
 
   function pendingChanges(
     uint start,
@@ -153,5 +171,18 @@ contract PublicLabels is IPublicLabels, AccessControl {
     );
     emit PendingChange(nextPendingChangeId);
     nextPendingChangeId++;
+  }
+
+  function _findRoleIndex(
+    bytes32 role,
+    address addr
+  ) internal view returns (uint) {
+    for (uint i = 0; i < roleMembers[role].length; i++) {
+      if (roleMembers[role][i] == addr) {
+        return i;
+      }
+    }
+
+    return roleMembers[role].length;
   }
 }
