@@ -43,4 +43,15 @@ describe("PublicLabels", () => {
       await PL.hasRole(await PL.CONTRIBUTOR_ROLE(), contrib1.address)
     ).to.equal(false);
   });
+
+  it("addVerifier", async () => {
+    const { PL, admin, verifier1 } = await loadFixture(deployFixture);
+    expect(
+      await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
+    ).to.equal(false);
+    await PL.connect(admin).addVerifier(verifier1.address);
+    expect(
+      await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
+    ).to.equal(true);
+  });
 });
