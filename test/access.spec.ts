@@ -54,4 +54,16 @@ describe("PublicLabels", () => {
       await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
     ).to.equal(true);
   });
+
+  it("removeVerifier", async () => {
+    const { PL, admin, verifier1 } = await loadFixture(deployFixture);
+    await PL.connect(admin).addVerifier(verifier1.address);
+    expect(
+      await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
+    ).to.equal(true);
+    await PL.connect(admin).removeVerifier(verifier1.address);
+    expect(
+      await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
+    ).to.equal(false);
+  });
 });
