@@ -97,4 +97,34 @@ describe("PublicLabels", () => {
     const VERIFIED = 2;
     expect(event.args.state).to.equal(VERIFIED);
   });
+
+  it("rejectPendingChanges", async function () {
+    const { PL, admin, contrib1 } = await deployFixture();
+
+    await PL.connect(admin).addContributor(contrib1.address);
+
+    const addr = ethers.Wallet.createRandom().address;
+    const label = "Test Label";
+    await PL.connect(contrib1).setLabels([addr], [label]);
+
+    // Assuming the pending change ID is 0 (since it's the first)
+    const pendingChangeId = 0;
+
+    const tx = await PL.connect(admin).rejectPendingChanges([pendingChangeId]);
+    const receipt = await tx.wait();
+
+    // Filter PendingChange event
+    const eventFilter = PL.filters.PendingChange();
+    const events = await PL.queryFilter(
+      eventFilter,
+      receipt?.blockNumber,
+      receipt?.blockNumber
+    );
+
+    expect(events.length).to.be.greaterThan(0);
+    const event = events.find(
+      (e: any) => Number(e.args.changeId) === pendingChangeId
+    );
+    expect(event).to.not.be.undefined;
+  });
 });
