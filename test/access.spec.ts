@@ -186,4 +186,29 @@ describe("PublicLabels", () => {
     );
     expect(event).to.not.be.undefined;
   });
+
+  it("setStates by Admin", async function () {
+    const { PL, admin } = await deployFixture();
+
+    const addr = ethers.Wallet.createRandom().address;
+    const newState = 1;
+
+    await expect(PL.connect(admin).setStates([addr], [newState]))
+      .to.emit(PL, "EntryChange")
+      .withArgs(addr, "", newState);
+  });
+
+  it("setStates by Verifier", async function () {
+    const { PL, admin, verifier1 } = await deployFixture();
+
+    const tx = await PL.connect(admin).addVerifier(verifier1.address);
+    await tx.wait();
+
+    const addr = ethers.Wallet.createRandom().address;
+    const newState = 1;
+
+    await expect(PL.connect(verifier1).setStates([addr], [newState]))
+      .to.emit(PL, "EntryChange")
+      .withArgs(addr, "", newState);
+  });
 });
