@@ -66,4 +66,35 @@ describe("PublicLabels", () => {
       await PL.hasRole(await PL.VERIFIER_ROLE(), verifier1.address)
     ).to.equal(false);
   });
+
+  it("approvePendingChanges", async () => {
+    const { PL, admin, contrib1 } = await deployFixture();
+
+    await PL.connect(admin).addContributor(contrib1.address);
+
+    const label = "New Label";
+    const addr = ethers.Wallet.createRandom().address;
+    await PL.connect(contrib1).setLabels([addr], [label]);
+
+    // Get the pending change ID (assuming it's the first and only one)
+    const pendingChangeId = 0;
+
+    const tx = await PL.connect(admin).approvePendingChanges([pendingChangeId]);
+    const receipt = await tx.wait();
+
+    // Filter EntryChange event
+    const eventFilter = PL.filters.EntryChange();
+    const events = await PL.queryFilter(
+      eventFilter,
+      receipt?.blockNumber,
+      receipt?.blockNumber
+    );
+
+    expect(events.length).to.be.greaterThan(0);
+    const event = events[0];
+    expect(event.args.addr).to.equal(addr);
+    expect(event.args.label).to.equal(label);
+    const VERIFIED = 2;
+    expect(event.args.state).to.equal(VERIFIED);
+  });
 });
