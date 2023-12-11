@@ -127,4 +127,63 @@ describe("PublicLabels", () => {
     );
     expect(event).to.not.be.undefined;
   });
+
+  it("setLabels by Contributor", async function () {
+    const { PL, admin, contrib1 } = await deployFixture();
+
+    const tx1 = await PL.connect(admin).addContributor(contrib1.address);
+    await tx1.wait();
+
+    const addr = ethers.Wallet.createRandom().address;
+    const label = "Test Label";
+
+    // Contributor sets label
+    const tx2 = await PL.connect(contrib1).setLabels([addr], [label]);
+    await tx2.wait();
+
+    // Get the pending change ID (assuming it's the first and only one)
+    const pendingChangeId = 0;
+    const tx3 = await PL.connect(admin).approvePendingChanges([
+      pendingChangeId,
+    ]);
+    const receipt = await tx3.wait();
+
+    // Check for PendingChange event
+    const eventFilter = PL.filters.EntryChange();
+    const events = await PL.queryFilter(
+      eventFilter,
+      receipt?.blockNumber,
+      receipt?.blockNumber
+    );
+
+    expect(events.length).to.be.greaterThan(0);
+    const event = events.find(
+      (e) => e.args.addr === addr && e.args.label === label
+    );
+    expect(event).to.not.be.undefined;
+  });
+
+  it("setLabels by Admin", async function () {
+    const { PL, admin } = await deployFixture();
+
+    const addr = ethers.Wallet.createRandom().address;
+    const label = "Test Label";
+
+    const tx = await PL.connect(admin).setLabels([addr], [label]);
+    const receipt = await tx.wait();
+
+    // Check for PendingChange event
+    const eventFilter = PL.filters.EntryChange();
+    const events = await PL.queryFilter(
+      eventFilter,
+      receipt?.blockNumber,
+      receipt?.blockNumber
+    );
+
+    expect(events.length).to.be.greaterThan(0);
+    const event = events.find(
+      (e) => e.args.addr === addr && e.args.label === label
+    );
+    expect(event).to.not.be.undefined;
+  });
 });
