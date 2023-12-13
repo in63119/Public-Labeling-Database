@@ -159,7 +159,29 @@ contract PublicLabels is IPublicLabels, AccessControl {
   function pendingChanges(
     uint start,
     uint limit
-  ) external view returns (address[] memory addr, Entry[] memory entries) {}
+  ) external view returns (address[] memory addr, Entry[] memory entries) {
+    uint count = 0;
+
+    for (uint i = start; i < nextPendingChangeId && count < limit; i++) {
+      if (bytes(pendingChangeEntries[i].label).length != 0) {
+        count++;
+      }
+    }
+
+    addr = new address[](count);
+    entries = new Entry[](count);
+
+    count = 0;
+    for (uint i = start; i < nextPendingChangeId && count < limit; i++) {
+      if (bytes(pendingChangeEntries[i].label).length != 0) {
+        addr[count] = pendingChangeAddrs[i];
+        entries[count] = pendingChangeEntries[i];
+        count++;
+      }
+    }
+
+    return (addr, entries);
+  }
 
   function allEntries(
     uint start,
