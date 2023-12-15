@@ -186,7 +186,27 @@ contract PublicLabels is IPublicLabels, AccessControl {
   function allEntries(
     uint start,
     uint limit
-  ) external view returns (Entry[] memory entries) {}
+  ) external view returns (Entry[] memory _entries) {
+    uint totalEntries = 0;
+
+    for (uint i = start; totalEntries < limit && i < nextPendingChangeId; i++) {
+      if (bytes(pendingChangeEntries[i].label).length != 0) {
+        totalEntries++;
+      }
+    }
+
+    Entry[] memory _entries = new Entry[](totalEntries);
+    uint index = 0;
+
+    for (uint i = start; index < totalEntries && i < nextPendingChangeId; i++) {
+      if (bytes(pendingChangeEntries[i].label).length != 0) {
+        _entries[index] = pendingChangeEntries[i];
+        index++;
+      }
+    }
+
+    return _entries;
+  }
 
   function getEntries(
     address[] memory addrs
