@@ -56,9 +56,9 @@ interface IPublicLabels {
   function allEntries(
     uint start,
     uint limit
-  ) external view returns (Entry[] memory entries);
+  ) external view returns (Entry[] memory _entries);
 
   function getEntries(
     address[] memory addrs
-  ) external view returns (Entry[] memory entries);
+  ) external view returns (Entry[] memory _entries);
 }
