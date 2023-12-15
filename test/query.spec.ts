@@ -60,4 +60,30 @@ describe("PublicLabels", () => {
       expect(returnedEntries[i].label).to.equal(labels[i]);
     }
   });
+
+  it("getEntries should return the correct entries for given addresses", async function () {
+    const { PL, admin, contrib1 } = await loadFixture(deployFixture);
+
+    await PL.connect(admin).addContributor(contrib1.address);
+
+    const labels = ["Label1", "Label2"];
+    const addrs = labels.map(() => ethers.Wallet.createRandom().address);
+
+    for (let i = 0; i < labels.length; i++) {
+      const tx = await PL.connect(contrib1).setLabels([addrs[i]], [labels[i]]);
+      await tx.wait();
+    }
+
+    for (let i = 0; i < addrs.length; i++) {
+      const tx = await PL.connect(admin).approvePendingChanges([i]);
+      await tx.wait();
+    }
+
+    const returnedEntries = await PL.connect(admin).getEntries(addrs);
+
+    expect(returnedEntries.length).to.equal(addrs.length);
+    for (let i = 0; i < addrs.length; i++) {
+      expect(returnedEntries[i].label).to.equal(labels[i]);
+    }
+  });
 });
