@@ -210,7 +210,15 @@ contract PublicLabels is IPublicLabels, AccessControl {
 
   function getEntries(
     address[] memory addrs
-  ) external view returns (Entry[] memory entries) {}
+  ) external view returns (Entry[] memory _entries) {
+    Entry[] memory _entries = new Entry[](addrs.length);
+
+    for (uint i = 0; i < addrs.length; i++) {
+      _entries[i] = entries[addrs[i]];
+    }
+
+    return _entries;
+  }
 
   function _addPendingChange(address addr, string memory label) internal {
     pendingChangeEntries[nextPendingChangeId] = Entry(label, Status.LABELED);
