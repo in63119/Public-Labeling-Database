@@ -160,9 +160,16 @@ contract PublicLabels is IPublicLabels, AccessControl {
     uint start,
     uint limit
   ) external view returns (address[] memory addr, Entry[] memory entries) {
-    uint count = 0;
+    require(start < nextPendingChangeId, "Invalid start index");
+    require(limit > 0, "Limit must be greater than 0");
 
-    for (uint i = start; i < nextPendingChangeId && count < limit; i++) {
+    uint end = start + limit;
+    if (end > nextPendingChangeId) {
+      end = nextPendingChangeId;
+    }
+
+    uint count = 0;
+    for (uint i = start; i < end && count < limit; i++) {
       if (bytes(pendingChangeEntries[i].label).length != 0) {
         count++;
       }
@@ -172,7 +179,7 @@ contract PublicLabels is IPublicLabels, AccessControl {
     entries = new Entry[](count);
 
     count = 0;
-    for (uint i = start; i < nextPendingChangeId && count < limit; i++) {
+    for (uint i = start; i < end && count < limit; i++) {
       if (bytes(pendingChangeEntries[i].label).length != 0) {
         addr[count] = pendingChangeAddrs[i];
         entries[count] = pendingChangeEntries[i];
@@ -187,9 +194,17 @@ contract PublicLabels is IPublicLabels, AccessControl {
     uint start,
     uint limit
   ) external view returns (Entry[] memory _entries) {
+    require(start < nextPendingChangeId, "Invalid start index");
+    require(limit > 0, "Limit must be greater than 0");
+
+    uint end = start + limit;
+    if (end > nextPendingChangeId) {
+      end = nextPendingChangeId;
+    }
+
     uint totalEntries = 0;
 
-    for (uint i = start; totalEntries < limit && i < nextPendingChangeId; i++) {
+    for (uint i = start; totalEntries < limit && i < end; i++) {
       if (bytes(pendingChangeEntries[i].label).length != 0) {
         totalEntries++;
       }
@@ -197,8 +212,7 @@ contract PublicLabels is IPublicLabels, AccessControl {
 
     Entry[] memory _entries = new Entry[](totalEntries);
     uint index = 0;
-
-    for (uint i = start; index < totalEntries && i < nextPendingChangeId; i++) {
+    for (uint i = start; index < totalEntries && i < end; i++) {
       if (bytes(pendingChangeEntries[i].label).length != 0) {
         _entries[index] = pendingChangeEntries[i];
         index++;
